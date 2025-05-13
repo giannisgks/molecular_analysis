@@ -1,7 +1,6 @@
 import streamlit as st
 import scanpy as sc
 import pandas as pd
-import tempfile
 import scipy
 
 st.set_page_config(page_title="scRNA-seq App", layout="wide")
@@ -25,11 +24,8 @@ if st.session_state.selected_tab == "Upload Data":
         uploaded_file = st.file_uploader("Upload your `.h5ad` file", type=["h5ad"])
 
         if uploaded_file:
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".h5ad") as tmp_file:
-                tmp_file.write(uploaded_file.read())
-                tmp_path = tmp_file.name
+            adata = sc.read_h5ad(uploaded_file)
 
-            adata = sc.read(tmp_path)
             st.session_state.adata = adata
 
             if "batch" in adata.obs:

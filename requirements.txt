@@ -1,6 +1,7 @@
 streamlit
+scanpy
 pandas
-# scanpy
+scipy
 # matplotlib
 # seaborn
 # harmonypy
