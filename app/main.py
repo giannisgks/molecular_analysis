@@ -5,6 +5,8 @@ import seaborn as sns
 import pandas as pd
 import scipy
 
+from pipeline import run_sin_cell_rna_seq_preprocessing
+
 st.set_page_config(page_title="scRNA-seq App", layout="wide")
 
 # Create tab layout
@@ -14,25 +16,42 @@ tabs = st.tabs(["Upload Data", "Preprocessing", "Single cell RNA", "Differential
 with tabs[0]:
     st.header("Upload Your Data")
 
-    uploaded_file = st.file_uploader("Upload your `.h5ad` file", type=["h5ad"])
+    uploaded_file = st.file_uploader("", type=["h5ad", "csv", "xlsx", "xls"])
 
-    if uploaded_file is not None:
-        adata = sc.read_h5ad(uploaded_file)
+
+    # If checkBox selected, we can try to adata.obs or batch otherwise we consider the data in iris format.
+    sc_rna_seq_selected = st.checkbox("Single cell RNA sequencing", value=True)
+
+    if uploaded_file is None:
+        
+
+        # Type of the file that is uploaded
+        # ftype = uploaded_file.name.split('.')[-1]
+        ftype = 'h5ad'
+
+        if ftype == 'h5ad':
+            # We consider data in AnnData object format.
+            sc_rna_seq_selected = True
+            import os
+            adata = sc.read_h5ad(os.path.join(os.getcwd(), 'pancreas_data.h5ad'))
+            # adata = sc.read_h5ad(uploaded_file)
+        elif ftype == "csv":
+            adata = pd.read_csv(uploaded_file)
+        elif ftype in ["xlsx", "xls"]:
+            pd.read_excel(uploaded_file)
+        else:   
+            st.error(f'File type "${ftype}" is not supported')
+
         st.session_state.adata = adata
         st.success("✅ File successfully uploaded and loaded.")
 
-        if "batch" in adata.obs:
+        # If biological file(file is in AnnData object format):
+        if ftype == "h5ad" and "batch" in adata.obs:
             st.subheader("Shape of expression matrix:")
             st.write(f"{adata.shape[0]} cells x {adata.shape[1]} genes")
 
             st.subheader("Dataset columns:")
             st.markdown("<br>".join(adata.obs.columns), unsafe_allow_html=True)
-
-            st.subheader("UMAP Available:")
-            if 'X_umap' in adata.obsm:
-                st.write("Yes, it is.")
-            else:
-                st.warning("❌ UMAP is not available. You need to preprocess the data before visualization.")
 
             st.subheader("Is the matrix sparse?")
             if (scipy.sparse.issparse(adata.X)):
@@ -48,11 +67,52 @@ with tabs[0]:
             st.warning("'batch' column not found in `adata.obs`.")
 
 
+
 with tabs[1]:
-    st.header("Preprocessing")
+    # ||----------Preprocessing for single cell RNA sequencing----------||
+    st.header("Preprocessing single cell RNA sequencing")
 
     if "adata" in st.session_state:
         adata = st.session_state.adata
+
+        # ----------Gathering-parameters-of-preprocessing-from-user----------
+        col1, col2 = st.columns(2)
+        col1.subheader("Minimum genes per cell")
+        min_genes = col1.number_input("", min_value=0, value=100, step=50)
+        col2.subheader("Minimum cells per gene")
+        min_cells = col2.number_input("", min_value=0, value=3, step=1)
+
+
+        st.subheader("Remove genes with prefixes:")
+        # All prefixes to show as checkboxes
+        all_prefixes = ['ERCC', 'MT-', 'mt-', 'RPS', 'RPL', 'HB', 'HSP', 'IG']
+
+        # Default selected prefixes
+        default_selected = ['ERCC', 'MT-', 'mt-']
+
+        # Create 8 columns
+        cols = st.columns(len(all_prefixes))
+
+        # Render checkboxes in each column
+        selected_prefixes = []
+        for i, prefix in enumerate(all_prefixes):
+            with cols[i]:
+                checked = st.checkbox(prefix, value=(prefix in default_selected))
+                if checked:
+                    selected_prefixes.append(prefix)
+
+
+        st.write("preprocessing...")
+        run_sin_cell_rna_seq_preprocessing(adata, min_genes, min_cells, selected_prefixes)
+        st.write("preprocess has completed")
+
+
+
+
+
+
+
+
 
         st.subheader("QC Metrics Before Filtering")
         st.write("""
@@ -72,12 +132,3 @@ Common ones include:
         sns.histplot(adata.obs['pct_counts_mt'], bins=50, ax=axes[1])
         axes[1].set_title("Mitochondrial gene % per cell")
         st.pyplot(fig)
-
-        if 'X_umap' in adata.obsm:
-            st.subheader("UMAP Plot")
-            sc.pl.umap(adata, color=['batch'], show=False)
-            st.pyplot(plt.gcf())
-
-            option = st.selectbox("Color UMAP by:", adata.obs.columns)
-            sc.pl.umap(adata, color=option, show=False)
-            st.pyplot(plt.gcf())

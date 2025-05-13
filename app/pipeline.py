@@ -7,18 +7,17 @@ import scanpy.external as sce
 import matplotlib.pyplot as plt
 
 
-
-def run_pipeline():
+def run_sin_cell_rna_seq_preprocessing(adata,
+                      min_genes=100,
+                      min_cells=3,
+                      remove_with_prefix=['ERCC', 'MT-', 'mt-'],
+                      
+                      ):
     
-    adata = sc.read('./pancreas_data.h5ad')
+    sc.pp.filter_cells(adata, min_genes=min_genes)
+    sc.pp.filter_genes(adata, min_cells=min_cells)
+    adata = adata[:, [gene for gene in adata.var_names if not str(gene).startswith(tuple(remove_with_prefix))]]
 
-    adata.obs["batch"].value_counts()
-
-
-def run_preprocessing():
-    sc.pp.filter_cells(adata, min_genes=600)
-    sc.pp.filter_genes(adata, min_cells=3)
-    adata = adata[:, [gene for gene in adata.var_names if not str(gene).startswith(tuple(['ERCC', 'MT-', 'mt-']))]]
     sc.pp.normalize_total(adata, target_sum=1e4)
     sc.pp.log1p(adata)
     sc.pp.highly_variable_genes(adata, min_mean=0.0125, max_mean=3, min_disp=0.5)
@@ -31,6 +30,7 @@ def run_preprocessing():
 
 
 
+def other():
     sc.pl.umap(adata,color=['celltype'],legend_fontsize=10)
 
 
