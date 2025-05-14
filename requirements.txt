@@ -2,6 +2,7 @@ streamlit
 scanpy
 pandas
 scipy
+xlrd # for .xls filetype
 # matplotlib
 # seaborn
 # harmonypy

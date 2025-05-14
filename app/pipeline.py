@@ -11,7 +11,7 @@ def run_sin_cell_rna_seq_preprocessing(adata,
                       min_genes=100,
                       min_cells=3,
                       remove_with_prefix=['ERCC', 'MT-', 'mt-'],
-                      
+                      batch_key=None,
                       ):
     
     sc.pp.filter_cells(adata, min_genes=min_genes)
@@ -27,6 +27,9 @@ def run_sin_cell_rna_seq_preprocessing(adata,
     sc.pp.pca(adata)
     sc.pp.neighbors(adata)
     sc.tl.umap(adata)
+
+    if batch_key is not None:
+        sc.external.pp.combat(adata, batch_key=batch_key)
 
 
 
