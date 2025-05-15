@@ -1,0 +1,19 @@
+/* App background */
+.stApp {
+    background-color: #0a1a04;
+}
+
+/* Tab underline */
+.stTabs [data-baseweb="tab-highlight"] {
+    background-color: limegreen !important;
+}
+
+/* Tab text */
+.stTabs [data-baseweb="tab"] {
+    color: white !important;
+    font-weight: bold;
+    font-size: 16px;
+}
+.stTabs [aria-selected="true"] {
+    color: limegreen !important;
+}
