@@ -1,4 +1,5 @@
-/* App background */
+/* styles.css */
+
 .stApp {
     background-color: #0a1a04;
 }
@@ -16,4 +17,12 @@
 }
 .stTabs [aria-selected="true"] {
     color: limegreen !important;
+}
+
+/* Grey helper text */
+.grey-text {
+    color: grey !important;
+    font-size: 0.95rem;
+    margin-bottom: 0.5rem;
+    display: block;
 }
