@@ -13,7 +13,7 @@ from scipy.stats import zscore
 
 st.set_page_config(page_title="scRNA-seq App", layout="wide")
 
-with open("styles.css") as f:
+with open("./app/styles.css") as f:
     st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
 # Create tab layout
@@ -452,6 +452,9 @@ with tabs[3]:
         else:
             st.info(f"{dim_red_method} embedding not found. Please run dimensionality reduction.")
 
+
+
+
         # BATCH CORRECTION
         st.subheader("🔁 Batch Correction")
         batch_methods = st.multiselect(
@@ -470,8 +473,7 @@ with tabs[3]:
 
         # DEG ANALYSIS
         st.subheader("📊 DEG Analysis")
-        
-        groupby = st.selectbox("Group by:", options=["condition", "celltype", "disease"])
+        groupby = st.selectbox("Group by:", options=[ "celltype", "disease", "donor", "batch", "protocol"])
         groups = adata.obs[groupby].unique().tolist()
         ref_group = st.selectbox("Reference Group:", options=groups)
         comp_group = st.selectbox("Comparison Group:", options=[g for g in groups if g != ref_group])
