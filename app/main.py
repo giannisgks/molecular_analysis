@@ -8,8 +8,8 @@ from sklearn.manifold import TSNE
 import numpy as np
 import scipy
 import bbknn
-from sklearn.preprocessing import MinMaxScaler, StandardScaler
-from scipy.stats import zscore
+
+
 
 st.set_page_config(page_title="scRNA-seq App", layout="wide")
 
@@ -21,7 +21,6 @@ tabs = st.tabs(["Upload Data", "Preprocessing", "Visualisation (before vs after)
 # --------- Tab 1: Upload Data ---------
 with tabs[0]:
     st.header("Upload Your Data")
-    st.markdown('<p style="color: grey;">This text should be grey</p>', unsafe_allow_html=True)
     uploaded_file = st.file_uploader("", type=["h5ad"])
     if uploaded_file is not None:
         
@@ -147,45 +146,57 @@ with tabs[1]:
     if "adata" in st.session_state and ftype == 'h5ad':
         adata = st.session_state.adata  # load AnnData from session
 
-        # === User Parameters ===
-        st.markdown('<p style="color: grey;">Filter out cells with too few genes and genes expressed in too few cells to remove noise and low-quality entries.</p>', unsafe_allow_html=True)
-        min_genes = st.number_input("Minimum genes per cell", min_value=0, value=100, step=50, key="min_genes_preproc")
-        min_cells = st.number_input("Minimum cells per gene", min_value=0, value=3, step=1, key="min_cells_preproc")
-       
-        st.markdown('<p style="color: grey;">Some gene prefixes (e.g., mitochondrial or ribosomal genes) can introduce bias; optionally remove them.</p>', unsafe_allow_html=True)
-        remove_prefixes = st.multiselect(
-            "Remove genes with prefixes:",
-            options=['ERCC', 'MT-', 'mt-', 'RPS', 'RPL', 'HB', 'HSP', 'IG'],
-            default=['ERCC', 'MT-', 'mt-'],
-            key="remove_prefixes"
-        )
+        st.markdown('<p style="color: grey;">Set preprocessing parameters below.</p>', unsafe_allow_html=True)
 
-        # === Batch Correction Option ===
-        st.markdown('<p style="color: grey;">Batch correction accounts for technical variation across different experimental runs.</p>', unsafe_allow_html=True)
-        batch_key = None
-        if "batch" in adata.obs.columns:
-            batch_key = st.selectbox("Batch key for batch correction", options=["None"] + list(adata.obs.columns), index=1, key="batch_key_select")
-            if batch_key == "None":
-                batch_key = None
+        # --- First Row: Filtering & Batch ---
+        col1, col2, col3, col4 = st.columns(4)
 
-        # === Optional Steps ===
-        st.markdown('<p style="color: grey;">Normalization and log transformation are standard steps to make expression values comparable across cells.</p>', unsafe_allow_html=True)
-        do_normalize = st.checkbox("Normalize Total Counts", value=True)
-        do_log = st.checkbox("Log1p Transform", value=True)
+        with col1:
+            min_genes = st.number_input("Minimum genes per cell", min_value=0, value=100, step=50, key="min_genes_preproc")
 
-        st.markdown('<p style="color: grey;">Scaling ensures that all genes contribute equally to downstream analyses like PCA.</p>', unsafe_allow_html=True)
-        do_scaling = st.checkbox("Scale Data", value=True)
+        with col2:
+            min_cells = st.number_input("Minimum cells per gene", min_value=0, value=3, step=1, key="min_cells_preproc")
 
-        st.markdown('<p style="color: grey;">Highly Variable Genes (HVGs) capture the most informative features and reduce dimensionality.</p>', unsafe_allow_html=True)
-        do_hvg = st.checkbox("Select Highly Variable Genes", value=True)
+        with col3:
+            remove_prefixes = st.multiselect(
+                "Remove genes with prefixes:",
+                options=['ERCC', 'MT-', 'mt-', 'RPS', 'RPL', 'HB', 'HSP', 'IG'],
+                default=['ERCC', 'MT-', 'mt-'],
+                key="remove_prefixes"
+            )
 
-        st.markdown('<p style="color: grey;">Dimensionality reduction helps visualize high-dimensional data in 2D space.</p>', unsafe_allow_html=True)
-        do_pca = st.checkbox("Run PCA and UMAP", value=True)
+        with col4:
+            batch_key = None
+            if "batch" in adata.obs.columns:
+                batch_key = st.selectbox(
+                    "Batch key for correction",
+                    options=["None"] + list(adata.obs.columns),
+                    index=1,
+                    key="batch_key_select"
+                )
+                if batch_key == "None":
+                    batch_key = None
 
-        # === Run Button ===
+        st.markdown('<hr>', unsafe_allow_html=True)
+
+        # --- Second Row: Preprocessing Checkboxes ---
+        col1, col2, col3, col4, col5 = st.columns(5)
+
+        with col1:
+            do_normalize = st.checkbox("Normalize Total Counts", value=True)
+        with col2:
+            do_log = st.checkbox("Log1p Transform", value=True)
+        with col3:
+            do_scaling = st.checkbox("Scale Data", value=True)
+        with col4:
+            do_hvg = st.checkbox("Select HVGs", value=True)
+        with col5:
+            do_pca = st.checkbox("Run PCA & UMAP", value=True)
+
+        # --- Run Button ---
+        st.markdown('<hr>', unsafe_allow_html=True)
         if st.button("Run Preprocessing"):
             with st.spinner("Running preprocessing..."):
-                # Save raw copy
                 st.session_state.adata_raw = adata.copy()
                 sc.pp.calculate_qc_metrics(st.session_state.adata_raw, qc_vars=["mt"], inplace=True)
 
@@ -196,21 +207,21 @@ with tabs[1]:
                 # Step 2: Remove genes by prefix
                 adata = adata[:, [gene for gene in adata.var_names if not str(gene).startswith(tuple(remove_prefixes))]]
 
-                # Step 3: Normalization
+                # Step 3: Normalize
                 if do_normalize:
                     sc.pp.normalize_total(adata, target_sum=1e4)
 
-                # Step 4: Log1p
+                # Step 4: Log transform
                 if do_log:
                     sc.pp.log1p(adata)
 
-                # Step 5: HVGs
+                # Step 5: Highly Variable Genes
                 if do_hvg:
                     sc.pp.highly_variable_genes(adata, min_mean=0.0125, max_mean=3, min_disp=0.5)
                     adata.raw = adata.copy()
                     adata = adata[:, adata.var.highly_variable]
                 else:
-                    adata.raw = adata.copy()  # Still preserve the raw version
+                    adata.raw = adata.copy()
 
                 # Step 6: Scaling
                 if do_scaling:
@@ -226,16 +237,14 @@ with tabs[1]:
                 if batch_key and batch_key in adata.obs.columns:
                     sc.pp.combat(adata, key=batch_key)
 
-                # Step 9: QC metrics after all changes
-                st.markdown('<p style="color: grey;">Recalculating quality control metrics to reflect filtered and normalized data.</p>', unsafe_allow_html=True)
+                # Step 9: Recalculate QC
                 sc.pp.calculate_qc_metrics(adata, qc_vars=["mt"], inplace=True)
 
-                # Save back
                 st.session_state.adata = adata.copy()
-
                 st.success("✅ Preprocessing completed!")
+                st.markdown("**Proceed to the next tab to see the changes visually.**")
 
-                st.markdown(f"**Proceed to the next tab to see the changes visually!**")
+
 
 with tabs[2]:
     st.header("Visualization")
@@ -511,7 +520,7 @@ with tabs[3]:
                 ax.set_ylabel("-log10 p-value", fontsize=14)
                 ax.set_title(f"Volcano Plot: {comp_group} vs {ref_group}", fontsize=16)
                 ax.legend(title="Expression", loc="upper right")
-                st.pyplot(fig)
+                st.pyplot(fig) 
 
                 # Show top genes
                 st.subheader("🔬 Top DEGs")

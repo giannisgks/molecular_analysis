@@ -1,13 +1,12 @@
-streamlit
-scanpy
 pandas
 scipy
-xlrd # for .xls filetype
-# matplotlib
-# seaborn
-# harmonypy
-# hdf5plugin
-# jupyter
-# igraph
-# leidenalg
-# adjustText
+xlrd
+streamlit
+scanpy
+matplotlib
+seaborn
+plotly
+pandas
+sklearn
+numpy
+bbknn
