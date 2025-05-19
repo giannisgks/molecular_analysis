@@ -395,7 +395,7 @@ with tabs[2]:
             gene_exp_filtered = gene_exp_filtered.toarray().flatten() if scipy.sparse.issparse(gene_exp_filtered) else gene_exp_filtered.flatten()
             fig6, ax6 = plt.subplots()
             sns.histplot(gene_exp_filtered, bins=50, kde=True, ax=ax6)
-            ax6.set_title(f"{selected_gene} Expression (Filtered)")
+            ax6.set_title(f"{selected_gene} Expression (Fwith tabs[3]:iltered)")
             col2.pyplot(fig6)
             col2.markdown(
                 '<p style="color: grey;">Distribution of expression levels for the selected gene in filtered data.</p>',
@@ -406,13 +406,16 @@ with tabs[2]:
 
 
 with tabs[3]:
-    st.header("🧠 Algorithms & DEG Analysis")
+    st.header("Algorithms & DEG Analysis")
 
     if "adata" in st.session_state:
         adata = st.session_state.adata
 
         dim_red_method = st.selectbox("Dimensionality Reduction Method", ["UMAP", "t-SNE"])
+        st.markdown("<span style='color: grey;'>Reduces high-dimensional gene expression data to 2D or 3D for visualization and pattern discovery.</span>", unsafe_allow_html=True)
+
         use_3d = st.checkbox("Use 3D projection")
+        st.markdown("<span style='color: grey;'>Enable this to visualize clusters in 3D instead of flat 2D projections.</span>", unsafe_allow_html=True)
 
         # Make sure PCA is done first
         if "X_pca" not in adata.obsm:
@@ -458,47 +461,74 @@ with tabs[3]:
                 plt.ylabel("Component 2")
                 plt.title(f"{dim_red_method} (2D)")
                 st.pyplot(plt.gcf())
+            st.caption(
+    f"The axes for {dim_red_method} are abstract and non-interpretable — they don't represent specific biological features, "
+    "but rather summarize high-dimensional variation in the data."
+)
+
         else:
             st.info(f"{dim_red_method} embedding not found. Please run dimensionality reduction.")
 
 
-
-
         # BATCH CORRECTION
-        st.subheader("🔁 Batch Correction")
+        st.subheader("Batch Correction")
         batch_methods = st.multiselect(
             "Select batch correction method(s):",
             ["Harmony", "BBKNN"]
         )
+        st.markdown("<span style='color: grey;'>Batch correction fixes differences in the data that come " \
+        "from how or when the samples were collected (like different labs or machines).<br>It makes sure you're comparing " \
+        "real biological differences—not just technical ones.</span>", unsafe_allow_html=True)
+
         if "Harmony" in batch_methods:
             st.spinner("Applying Harmony...")
             import harmonypy as hm
             ho = hm.run_harmony(adata.obsm['X_pca'], adata.obs, ['batch'])
             adata.obsm['X_pca_harmony'] = ho.Z_corr.T
+            st.markdown("<span style='color: grey;'>Harmony corrects PCA embeddings for known batch labels, improving integration.</span>", unsafe_allow_html=True)
 
         if "BBKNN" in batch_methods:
             st.spinner("Applying BBKNN...")
             bbknn.bbknn(adata, batch_key='batch')
+            st.markdown("<span style='color: grey;'>BBKNN adjusts nearest neighbors to align batches without altering expression data.</span>", unsafe_allow_html=True)
 
         # DEG ANALYSIS
+        valid_groupby_options = [
+            col for col in adata.obs.columns 
+            if adata.obs[col].nunique() > 1 and adata.obs[col].dtype.name in ["category", "object"]
+]
+
+        if not valid_groupby_options:
+            st.error("❌ No suitable categorical columns found for DEG analysis.")
+            st.stop()
+
+        groupby = st.selectbox("Group by:", options=valid_groupby_options)
         st.subheader("📊 DEG Analysis")
-        groupby = st.selectbox("Group by:", options=[ "celltype", "disease", "donor", "batch", "protocol"])
+        groupby = st.selectbox("Group by:", options=["celltype", "disease", "donor", "batch", "protocol"])
+
+        # Check column existence
+        if groupby not in adata.obs.columns:
+            st.error(f"❌ The selected column '{groupby}' is not found in the dataset. Please choose a different one.")
+            st.stop()
+
         groups = adata.obs[groupby].unique().tolist()
         ref_group = st.selectbox("Reference Group:", options=groups)
         comp_group = st.selectbox("Comparison Group:", options=[g for g in groups if g != ref_group])
-        
+
+        st.markdown("<span style='color: grey;'>Select a group to compare against the reference group using statistical tests.</span>", unsafe_allow_html=True)
+
         if st.button("Run DEG Analysis"):
             with st.spinner("Running differential expression..."):
                 sc.tl.rank_genes_groups(adata, groupby=groupby, groups=[comp_group], reference=ref_group, method="wilcoxon")
                 result = adata.uns['rank_genes_groups']
                 degs_df = sc.get.rank_genes_groups_df(adata, group=comp_group)
-
-                # Classify DEG
-                degs_df["neg_log10_pval"] = -np.log10(degs_df["pvals"])
-                degs_df["diffexpressed"] = "NS"
-                degs_df.loc[(degs_df["logfoldchanges"] > 1) & (degs_df["pvals"] < 0.05), "diffexpressed"] = "UP"
-                degs_df.loc[(degs_df["logfoldchanges"] < -1) & (degs_df["pvals"] < 0.05), "diffexpressed"] = "DOWN"
-
+                if "pvals" in degs_df.columns and "logfoldchanges" in degs_df.columns:
+                    degs_df["neg_log10_pval"] = -np.log10(degs_df["pvals"])
+                    degs_df["diffexpressed"] = "NS"
+                    degs_df.loc[(degs_df["logfoldchanges"] > 1) & (degs_df["pvals"] < 0.05), "diffexpressed"] = "UP"
+                    degs_df.loc[(degs_df["logfoldchanges"] < -1) & (degs_df["pvals"] < 0.05), "diffexpressed"] = "DOWN"
+                else:
+                    st.error("DEG results missing required columns. Please check input data.")
                 # Volcano Plot
                 fig, ax = plt.subplots(figsize=(10, 6))
                 sns.scatterplot(
@@ -523,7 +553,8 @@ with tabs[3]:
                 st.pyplot(fig) 
 
                 # Show top genes
-                st.subheader("🔬 Top DEGs")
+                st.markdown("<span style='color: grey;'>Identifies genes significantly up- or down-regulated between groups, useful for biomarker discovery.</span>", unsafe_allow_html=True)
+                st.subheader("Top DEGs")
                 top_up = degs_df[degs_df["diffexpressed"] == "UP"].nlargest(10, "logfoldchanges")
                 top_down = degs_df[degs_df["diffexpressed"] == "DOWN"].nsmallest(10, "logfoldchanges")
                 st.write("**Top Up-regulated Genes:**")
@@ -533,3 +564,26 @@ with tabs[3]:
 
     else:
         st.warning("Please upload and preprocess data before using this tab.")
+
+with tabs[4]:
+    st.header("About us")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.image("./app/developers.jpg", caption="Development Team", use_container_width=True)
+
+    with col2:
+        st.markdown("""
+        **Our Mission**  
+        A team working on making single-cell data analysis more accessible and properly visualized.  
+        This project was created for the course *Software Technology*, supervised by Aristeidis Vrahatis and co-supervised by Konstantinos Lazaros.
+
+        **Team Members**  
+        - Mohammad-Matin Marzie – Planning, Code Optimization  
+        - Ioannis Giakisikloglou – Visualization, Plotting, Algorithm Implementation
+
+        **Contact Us**  
+        - inf2022001@ionio.gr – Matin  
+        - inf2022034@ionio.gr – Giannis
+        """, unsafe_allow_html=True)
