@@ -87,11 +87,6 @@ with tabs[0]:
             st.subheader("Data from `adata.obs`:")
             st.dataframe(adata.obs.head())
 
-            # --- Genes info preview (var) ---
-            if adata.var is not None:
-                st.subheader("Information from `adata.var`:")
-                st.dataframe(adata.var)
-
             # --- Calculate percentage of mitochondrial genes ---
             if not "pct_mito" in adata.obs.columns:
                 adata.var["mt"] = adata.var_names.str.startswith("MT-")
@@ -144,7 +139,7 @@ with tabs[1]:
     st.header("Preprocessing of the data")
 
     if "adata" in st.session_state and ftype == 'h5ad':
-        adata = st.session_state.adata  # load AnnData from session
+        adata = st.session_state.adata  # Load AnnData from session
 
         st.markdown('<p style="color: grey;">Set preprocessing parameters below.</p>', unsafe_allow_html=True)
 
@@ -180,7 +175,7 @@ with tabs[1]:
         st.markdown('<hr>', unsafe_allow_html=True)
 
         # --- Second Row: Preprocessing Checkboxes ---
-        col1, col2, col3, col4, col5 = st.columns(5)
+        col1, col2, col3, col4, col5, col6= st.columns(6)
 
         with col1:
             do_normalize = st.checkbox("Normalize Total Counts", value=True)
@@ -192,58 +187,113 @@ with tabs[1]:
             do_hvg = st.checkbox("Select HVGs", value=True)
         with col5:
             do_pca = st.checkbox("Run PCA & UMAP", value=True)
+        with col6:
+            do_leiden = st.checkbox("Run Leiden Clustering", value=False)
+
+        st.markdown('<hr>', unsafe_allow_html=True)
+
+        # --- Functions ---
+        summary_metrics = {}
+
+        def log_step_diff(prev_adata, curr_adata, step_label):
+            cells_removed = prev_adata.n_obs - curr_adata.n_obs
+            genes_removed = prev_adata.n_vars - curr_adata.n_vars
+
+            msg_parts = []
+            if cells_removed > 0:
+                msg_parts.append(f"**{cells_removed} cells removed**")
+            if genes_removed > 0:
+                msg_parts.append(f"**{genes_removed} genes removed**")
+
+            if msg_parts:
+                st.markdown(f"**{step_label}:** " + ", ".join(msg_parts))
 
         # --- Run Button ---
-        st.markdown('<hr>', unsafe_allow_html=True)
         if st.button("Run Preprocessing"):
-            with st.spinner("Running preprocessing..."):
+            with st.spinner("Calculating initial QC metrics..."):
                 st.session_state.adata_raw = adata.copy()
                 sc.pp.calculate_qc_metrics(st.session_state.adata_raw, qc_vars=["mt"], inplace=True)
 
-                # Step 1: Filter
+            # Step 1: Filter
+            with st.spinner("Filtering cells and genes..."):
+                prev = adata.copy()
                 sc.pp.filter_cells(adata, min_genes=min_genes)
                 sc.pp.filter_genes(adata, min_cells=min_cells)
+                log_step_diff(prev, adata, "Filtering")
 
-                # Step 2: Remove genes by prefix
+            # Step 2: Remove gene prefixes
+            with st.spinner("Removing gene prefixes..."):
+                prev = adata.copy()
                 adata = adata[:, [gene for gene in adata.var_names if not str(gene).startswith(tuple(remove_prefixes))]]
+                log_step_diff(prev, adata, "Prefix Removal")
 
-                # Step 3: Normalize
-                if do_normalize:
+            # Step 3: Normalize
+            if do_normalize:
+                with st.spinner("Normalizing total counts..."):
                     sc.pp.normalize_total(adata, target_sum=1e4)
 
-                # Step 4: Log transform
-                if do_log:
+            # Step 4: Log transform
+            if do_log:
+                with st.spinner("Applying log1p transform..."):
                     sc.pp.log1p(adata)
 
-                # Step 5: Highly Variable Genes
-                if do_hvg:
+            # Step 5: HVG
+            if do_hvg:
+                with st.spinner("Selecting highly variable genes..."):
+                    prev = adata.copy()
                     sc.pp.highly_variable_genes(adata, min_mean=0.0125, max_mean=3, min_disp=0.5)
                     adata.raw = adata.copy()
                     adata = adata[:, adata.var.highly_variable]
-                else:
-                    adata.raw = adata.copy()
 
-                # Step 6: Scaling
-                if do_scaling:
+                    # ✅ Recalculate obs metrics based on subsetted genes
+                    if isinstance(adata.X, np.ndarray):
+                        adata.obs["n_genes_by_counts"] = (adata.X > 0).sum(axis=1)
+                        adata.obs["total_counts"] = adata.X.sum(axis=1)
+                    else:
+                        adata.obs["n_genes_by_counts"] = (adata.X > 0).sum(axis=1).A1
+                        adata.obs["total_counts"] = adata.X.sum(axis=1).A1
+
+                    log_step_diff(prev, adata, "HVG Selection")
+            else:
+                adata.raw = adata.copy()
+
+            # Step 6: Scaling
+            if do_scaling:
+                with st.spinner("Scaling the data..."):
                     sc.pp.scale(adata, max_value=10)
 
-                # Step 7: Dimensionality Reduction
-                if do_pca:
+            # Step 7: PCA & UMAP
+            if do_pca:
+                with st.spinner("Running PCA and UMAP..."):
                     sc.pp.pca(adata)
                     sc.pp.neighbors(adata)
                     sc.tl.umap(adata)
 
-                # Step 8: Batch Correction
-                if batch_key and batch_key in adata.obs.columns:
+            # Run Leiden clustering if checked
+            if do_leiden:
+                with st.spinner("Running Leiden clustering..."):
+                    sc.tl.leiden(adata, resolution=1.0)
+                    st.markdown(f"Leiden clustering done. Found **{adata.obs['leiden'].nunique()}** clusters.")
+
+            # Step 8: Batch Correction
+            if batch_key and batch_key in adata.obs.columns:
+                with st.spinner("Applying batch correction (ComBat)..."):
                     sc.pp.combat(adata, key=batch_key)
 
-                # Step 9: Recalculate QC
-                sc.pp.calculate_qc_metrics(adata, qc_vars=["mt"], inplace=True)
+                                    # ✅ Recalculate per-cell metrics
+                if adata.raw is not None:
+                    if isinstance(adata.X, np.ndarray):
+                        adata.obs["n_genes_by_counts"] = (adata.X > 0).sum(axis=1)
+                        adata.obs["total_counts"] = adata.X.sum(axis=1)
+                    else:
+                        adata.obs["n_genes_by_counts"] = (adata.X > 0).sum(axis=1).A1
+                        adata.obs["total_counts"] = adata.X.sum(axis=1).A1
 
-                st.session_state.adata = adata.copy()
-                st.success("✅ Preprocessing completed!")
-                st.markdown("**Proceed to the next tab to see the changes visually.**")
+            # Save processed data
+            st.session_state.adata = adata.copy()
+            st.success("✅ Preprocessing completed!")
 
+            st.markdown("**Proceed to the next tab to see the changes visually.**")
 
 
 with tabs[2]:
@@ -408,91 +458,129 @@ with tabs[2]:
 with tabs[3]:
     st.header("Algorithms & DEG Analysis")
 
-    if "adata" in st.session_state:
+    if "adata" not in st.session_state:
+        st.warning("Please upload and preprocess data before using this tab.")
+        st.stop()
+
+    else:
         adata = st.session_state.adata
+        col1, col2 = st.columns(2)
+        with col1:
+            # Dimensionality Reduction controls
+            dim_red_method = st.selectbox("Dimensionality Reduction Method", ["UMAP", "t-SNE"])
+            st.markdown(
+                "<span style='color: grey;'>Reduces high-dimensional gene expression data to 2D or 3D for visualization and pattern discovery.</span>",
+                unsafe_allow_html=True
+            )
+        with col2:
 
-        dim_red_method = st.selectbox("Dimensionality Reduction Method", ["UMAP", "t-SNE"])
-        st.markdown("<span style='color: grey;'>Reduces high-dimensional gene expression data to 2D or 3D for visualization and pattern discovery.</span>", unsafe_allow_html=True)
+            # Let user choose coloring variable if available
+            color_options = []
+            if "batch" in adata.obs.columns:
+                color_options.append("batch")
+            if "celltype" in adata.obs.columns:
+                color_options.append("celltype")
 
-        use_3d = st.checkbox("Use 3D projection")
-        st.markdown("<span style='color: grey;'>Enable this to visualize clusters in 3D instead of flat 2D projections.</span>", unsafe_allow_html=True)
-
-        # Make sure PCA is done first
-        if "X_pca" not in adata.obsm:
-            with st.spinner("Running PCA..."):
-                sc.tl.pca(adata)
-
-        # Run chosen dimensionality reduction automatically
-        with st.spinner(f"Running {dim_red_method}..."):
-            if dim_red_method == "UMAP":
-                if "neighbors" not in adata.uns:
-                    sc.pp.neighbors(adata)
-                sc.tl.umap(adata, n_components=3 if use_3d else 2)
-                coords = adata.obsm["X_umap"]
-
-            elif dim_red_method == "t-SNE":
-                if "X_tsne" not in adata.obsm or adata.obsm["X_tsne"].shape[1] != (3 if use_3d else 2):
-                    tsne = TSNE(n_components=3 if use_3d else 2, random_state=0)
-                    X_pca = adata.obsm['X_pca']
-                    tsne_result = tsne.fit_transform(X_pca)
-                    adata.obsm['X_tsne'] = tsne_result
-                coords = adata.obsm["X_tsne"]
-
-        # Plotting
-        if coords is not None:
-            fig = plt.figure()
-            if use_3d and coords.shape[1] == 3:
-                df = pd.DataFrame(coords, columns=["Component 1", "Component 2", "Component 3"])
-                fig = px.scatter_3d(df, x="Component 1", y="Component 2", z="Component 3", opacity=0.25)
-                fig.update_layout(
-                    paper_bgcolor='rgba(0,0,0,0)',   # Transparent outer background
-                    plot_bgcolor='rgba(0,0,0,0)',    # Transparent plotting area
-                    scene=dict(
-                        xaxis=dict(backgroundcolor="rgba(0,0,0,0)"),
-                        yaxis=dict(backgroundcolor="rgba(0,0,0,0)"),
-                        zaxis=dict(backgroundcolor="rgba(0,0,0,0)")
-                    )
-                )
-                fig.update_layout(title=f"{dim_red_method} (3D)")
-                st.plotly_chart(fig)
+            if color_options:
+                color_by = st.selectbox("Color by:", options=color_options)
             else:
-                plt.scatter(coords[:, 0], coords[:, 1], s=5, alpha=0.6)
-                plt.xlabel("Component 1")
-                plt.ylabel("Component 2")
-                plt.title(f"{dim_red_method} (2D)")
-                st.pyplot(plt.gcf())
-            st.caption(
-    f"The axes for {dim_red_method} are abstract and non-interpretable — they don't represent specific biological features, "
-    "but rather summarize high-dimensional variation in the data."
-)
+                color_by = None
+        
+        use_3d = st.checkbox("Use 3D projection")
 
-        else:
-            st.info(f"{dim_red_method} embedding not found. Please run dimensionality reduction.")
+        # Button to trigger dimensionality reduction and plotting
+        if st.button("Run Dimensionality Reduction and Plot"):
 
+            # Run PCA if needed
+            if "X_pca" not in adata.obsm:
+                with st.spinner("Running PCA..."):
+                    sc.tl.pca(adata)
 
-        # BATCH CORRECTION
+            coords = None
+            with st.spinner(f"Running {dim_red_method}..."):
+                if dim_red_method == "UMAP":
+                    if "neighbors" not in adata.uns:
+                        sc.pp.neighbors(adata)
+                    sc.tl.umap(adata, n_components=3 if use_3d else 2)
+                    coords = adata.obsm["X_umap"]
+
+                elif dim_red_method == "t-SNE":
+                    from sklearn.manifold import TSNE
+                    if "X_tsne" not in adata.obsm or adata.obsm["X_tsne"].shape[1] != (3 if use_3d else 2):
+                        tsne = TSNE(n_components=3 if use_3d else 2, random_state=0)
+                        tsne_result = tsne.fit_transform(adata.obsm['X_pca'])
+                        adata.obsm['X_tsne'] = tsne_result
+                    coords = adata.obsm["X_tsne"]
+
+            # Plot embedding
+            if coords is not None:
+                if use_3d and coords.shape[1] == 3:
+                    df = pd.DataFrame(coords, columns=["Component 1", "Component 2", "Component 3"])
+                    import plotly.express as px
+                    fig = px.scatter_3d(
+                        df,
+                        x="Component 1", y="Component 2", z="Component 3",
+                        color=adata.obs[color_by] if color_by else None,
+                        opacity=0.7,
+                    )
+                    fig.update_layout(title=f"{dim_red_method} (3D)")
+                    st.plotly_chart(fig)
+                else:
+                    fig, ax = plt.subplots()
+                    if color_by and color_by in adata.obs.columns:
+                        if adata.obs[color_by].dtype.name == "category":
+                            colors = adata.obs[color_by].cat.codes
+                        else:
+                            # fallback if not category dtype
+                            colors = pd.factorize(adata.obs[color_by])[0]
+                    else:
+                        colors = 'b'
+
+                    scatter = ax.scatter(coords[:, 0], coords[:, 1], s=10, alpha=0.7, c=colors)
+                    ax.set_facecolor('none')          # Make axes background transparent
+                    fig.patch.set_alpha(0)            # Make figure background fully transparent
+
+                    # Optionally remove axes spines and ticks for cleaner look
+                    for spine in ax.spines.values():
+                        spine.set_visible(False)
+                    ax.tick_params(left=False, bottom=False, labelleft=False, labelbottom=False)
+                    ax.set_title(f"{dim_red_method} (2D)", color="white")
+                    st.pyplot(fig)
+
+                st.caption(
+                    f"The axes for {dim_red_method} are abstract and non-interpretable — they don't represent specific biological features, "
+                    "but rather summarize high-dimensional variation in the data."
+                )
+            else:
+                st.info(f"{dim_red_method} embedding not found. Please run dimensionality reduction.")
+
+        # Batch Correction Section
         st.subheader("Batch Correction")
         batch_methods = st.multiselect(
             "Select batch correction method(s):",
             ["Harmony", "BBKNN"]
         )
-        st.markdown("<span style='color: grey;'>Batch correction fixes differences in the data that come " \
-        "from how or when the samples were collected (like different labs or machines).<br>It makes sure you're comparing " \
-        "real biological differences—not just technical ones.</span>", unsafe_allow_html=True)
+        st.markdown(
+            "<span style='color: grey;'>Batch correction fixes differences in the data caused by technical artifacts.</span>",
+            unsafe_allow_html=True
+        )
 
-        if "Harmony" in batch_methods:
-            st.spinner("Applying Harmony...")
-            import harmonypy as hm
-            ho = hm.run_harmony(adata.obsm['X_pca'], adata.obs, ['batch'])
-            adata.obsm['X_pca_harmony'] = ho.Z_corr.T
-            st.markdown("<span style='color: grey;'>Harmony corrects PCA embeddings for known batch labels, improving integration.</span>", unsafe_allow_html=True)
+        if st.button("Apply Batch Correction"):
+            if "batch" not in adata.obs.columns:
+                st.error("No 'batch' column found in metadata for batch correction.")
+            else:
+                if "Harmony" in batch_methods:
+                    import harmonypy as hm
+                    ho = hm.run_harmony(adata.obsm['X_pca'], adata.obs, ['batch'])
+                    adata.obsm['X_pca_harmony'] = ho.Z_corr.T
+                    st.success("Harmony batch correction applied.")
 
-        if "BBKNN" in batch_methods:
-            st.spinner("Applying BBKNN...")
-            bbknn.bbknn(adata, batch_key='batch')
-            st.markdown("<span style='color: grey;'>BBKNN adjusts nearest neighbors to align batches without altering expression data.</span>", unsafe_allow_html=True)
+                if "BBKNN" in batch_methods:
+                    import bbknn
+                    bbknn.bbknn(adata, batch_key='batch')
+                    st.success("BBKNN batch correction applied.")
 
-        # DEG ANALYSIS
+# DEG ANALYSIS
         valid_groupby_options = [
             col for col in adata.obs.columns 
             if adata.obs[col].nunique() > 1 and adata.obs[col].dtype.name in ["category", "object"]
@@ -562,8 +650,6 @@ with tabs[3]:
                 st.write("**Top Down-regulated Genes:**")
                 st.dataframe(top_down[["names", "logfoldchanges", "pvals"]])
 
-    else:
-        st.warning("Please upload and preprocess data before using this tab.")
 
 with tabs[4]:
     st.header("About us")
