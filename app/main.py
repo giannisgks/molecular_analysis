@@ -16,12 +16,18 @@ st.set_page_config(page_title="scRNA-seq App", layout="wide")
 with open("./app/styles.css") as f:
     st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
+with open("./app/loader.css") as f:
+    st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+
+
 # Create tab layout
 tabs = st.tabs(["Upload Data", "Preprocessing", "Visualisation (before vs after)","Algorithms", "About Us"])
 # --------- Tab 1: Upload Data ---------
 with tabs[0]:
     st.header("Upload Your Data")
-    uploaded_file = st.file_uploader("", type=["h5ad"])
+
+    uploaded_file = st.file_uploader("", type=["h5ad"], key='pulse')    
+
     if uploaded_file is not None:
         
 
@@ -209,7 +215,28 @@ with tabs[1]:
                 st.markdown(f"**{step_label}:** " + ", ".join(msg_parts))
 
         # --- Run Button ---
-        if st.button("Run Preprocessing"):
+        if st.button("run preprocessing", key="glitch"):
+            loader = st.empty()
+
+            with loader.container():
+                loader.markdown("""
+                <div class="pl">
+                <div class="pl__dot"></div>
+                <div class="pl__dot"></div>
+                <div class="pl__dot"></div>
+                <div class="pl__dot"></div>
+                <div class="pl__dot"></div>
+                <div class="pl__dot"></div>
+                <div class="pl__dot"></div>
+                <div class="pl__dot"></div>
+                <div class="pl__dot"></div>
+                <div class="pl__dot"></div>
+                <div class="pl__dot"></div>
+                <div class="pl__dot"></div>
+                <div class="pl__text">Loading…</div>
+                </div>
+                """, unsafe_allow_html=True)
+            
             with st.spinner("Calculating initial QC metrics..."):
                 st.session_state.adata_raw = adata.copy()
                 sc.pp.calculate_qc_metrics(st.session_state.adata_raw, qc_vars=["mt"], inplace=True)
@@ -291,6 +318,7 @@ with tabs[1]:
 
             # Save processed data
             st.session_state.adata = adata.copy()
+            loader.empty()
             st.success("✅ Preprocessing completed!")
 
             st.markdown("**Proceed to the next tab to see the changes visually.**")
