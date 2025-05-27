@@ -12,6 +12,13 @@ with open("./app/loader.css") as f:
     st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
 
+
+audio_file = open("app/song.mp3", "rb")
+audio_bytes = audio_file.read()
+
+st.audio(audio_bytes, format="audio/mp3")
+
+
 # Create tab layout
 tabs = st.tabs(["Upload Data", "Preprocessing", "Visualisation (before vs after)","Algorithms", "About Us"])
 # --------- Tab 1: Upload Data ---------
