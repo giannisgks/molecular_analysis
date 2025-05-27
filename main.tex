@@ -1,0 +1,533 @@
+\documentclass{article}  % Ορίζουμε τον τύπο του εγγράφου
+\usepackage[utf8]{inputenc}  % utf-
+\usepackage{geometry}        % page dimentions
+\geometry{ a4paper, total={170mm,257mm}, left=20mm, top=20mm} 
+\usepackage{graphicx}       % insert images
+\usepackage{titling}        % check tittle
+\usepackage[hidelinks]{hyperref}    %  not colored links
+\usepackage{fancyhdr}       % custom headers
+\usepackage{lmodern}        % font
+\usepackage{eso-pic}        % for di.png
+\usepackage[backend=biber]{biblatex}  % for citations
+\addbibresource{bibfile.bib} % citations file
+\usepackage{csquotes}
+\usepackage{listings} % for depicting bash language codes. :)
+\usepackage{alphabeta}
+\usepackage[utf8]{inputenc}
+\usepackage{hyperref}
+\usepackage{caption}
+\usepackage{float}
+
+
+\fancypagestyle{plain}{  
+    \fancyhf{} 
+    \fancyfoot[R]{\includegraphics[width=0.7cm]{di.png}}
+    \fancyfoot[L]{\thedate}
+    \fancyhead[L]{}
+    \fancyhead[R]{\theauthor}
+}
+
+\title{Διαδραστική Πλατφόρμα Μηχανικής Μάθησης \\ για Δεδομένα Μοριακής Βιολογίας}
+\date{Μάιος 2025}
+
+\makeatletter
+\def\@maketitle{%
+  \newpage
+  \null
+  \vskip 1em%
+  \begin{center}%
+  \let \footnote \thanks
+    {\LARGE \@title \par}%
+    \vskip 1em%
+  \end{center}%
+  \par
+  \vskip 1em}
+\makeatother
+
+
+% ||--------------------εξώφυλλο--------------------||
+\begin{document}
+
+\begin{titlepage}
+\pagestyle{plain}
+    \centering
+    \vspace*{1cm}
+    {\bfseries\LARGE Τμήμα Πληροφορικής \par}
+    \vspace{0.5cm}
+    {\bfseries\Large Ιόνιο Πανεπιστήμιο \par}
+    \vspace{2cm}
+    \includegraphics[width=0.4\textwidth]{ionian.png}\par\vspace{1cm}
+    {\bfseries\Huge Διαδραστική Πλατφόρμα Μηχανικής Μάθησης \\ για Δεδομένα Μοριακής Βιολογίας\par}
+    \vspace{2cm}
+    {\bfseries\Large Ιωάννης Γιακισικλόγλου \\  {Mohammad-Matin Marzie}\par}
+    \vspace{2cm}
+    {\bfseries Επιβλέπων: Καθηγητής Αριστείδης Βραχάτης \\ Συνεπιβλέπων: Κωνσταντίνος Λάζαρος\par}
+    \vfill
+    {\bfseries\large Κέρκυρα, Μάϊος 2025}
+\end{titlepage}
+
+\newpage
+% ||--------------------πίνακας-περιεχομένου-----------------||
+\tableofcontents
+\newpage
+
+\noindent\rule{\linewidth}{0.4pt}
+% ||--------------------Εισαγωγή--------------------||
+\section{Εισαγωγή}
+
+Το παρών report αφορά την ανάπτυξη μιας διαδραστικής εφαρμογής για την ανάλυση και οπτικοποίηση μοριακών δεδομένων, αξιοποιώντας τεχνικές μηχανικής μάθησης, σύγχρονες βιβλιοθήκες της \textbf{Python} και τεχνολογίες όπως το \textbf{Streamlit} και το \textbf{Docker}. Στόχος είναι η δημιουργία μιας φορητής, επεκτάσιμης και εύχρηστης λύσης, η οποία υποστηρίζεται από μια καλά τεκμηριωμένη διαδικασία σχεδίασης (ενότητα~\textbf{\ref{sec:uml}}), υλοποίησης (ενότητα~\ref{sec:implementation}), ανάλυση της υλοποίησης και δοκιμών (ενότητα~\ref{sec:testing}). Παρουσιάζονται επίσης διαγράμματα \textbf{UML} (ενότητα~\ref{sec:uml}) που περιγράφουν τη δομή του συστήματος, καθώς και η διαδικασία \textbf{dockerization} (ενότητα~\ref{sec:dockerization}), ενώ η ενότητα~\ref{sec:visualization} επικεντρώνεται στην οπτικοποίηση των παραγόμενων αποτελεσμάτων. Μέσα από αυτή τη δομημένη προσέγγιση, η εργασία συμβάλλει στην κατανόηση και εφαρμογή πρακτικών ανάλυσης δεδομένων και ανάπτυξης λογισμικού.
+
+
+
+
+
+
+\noindent\rule{\linewidth}{0.4pt}
+% ||--------------------μεθοδολογία--------------------||
+
+
+
+
+\section{Μεθοδολογία Υλοποίησης}
+\subsection{Εισαγωγή}
+Στις \textbf{Τεχνολογίες Λογισμικού}, υπάρχουν διάφορα πλαίσια ανάπτυξης λογισμικού ( {software development life cycle (SDLC)}), όπως η  {soft system methodology}, το  {agile} και μεθοδολογίες ανάπτυξης όπως το μοντέλο του καταρράκτη ({Waterfall}) και η προτυποποίηση ({Prototyping}) \cite{edwards2025}, οι οποίες διαδραματίζουν εξέχοντα ρόλο στην εξοικονόμηση χρόνου, την οργάνωση, τη συνέπεια και την καλύτερη επικοινωνία ανάμεσα στα μέλη της ομάδας ανάπτυξης.
+
+
+\vspace{-1em}
+\begin{figure}[ht!]
+\centering
+\begin{minipage}{0.5\textwidth}
+    \includegraphics[width=\linewidth]{waterfall-methodology.jpg}
+    \caption{Waterfall Software Development Methodology}
+    \label{fig:waterfall}
+\end{minipage}
+\hfill
+\begin{minipage}{0.45\textwidth}
+    Για την παρούσα εργασία, χρησιμοποιήθηκε το πλαίσιο \textbf{Agile}, δεδομένου ότι το πρόβλημα προς αντιμετώπιση δεν ήταν ιδιαίτερα σύνθετο ή απροσδιόριστο, και η φύση του προβλήματος (ζητούμενο έργο) έγκειται στην ταχύτερη ανάπτυξη του λογισμικού (εξάλλου, για αυτό χρησιμοποιούμε το Streamlit) \cite{flora2014systematic}. Επιπλέον, οι λειτουργικές και μη λειτουργικές απαιτήσεις (functional and non-functional requirements), καθώς και οι προδιαγραφές της εργασίας, ήταν εκ των προτέρων γνωστές (από την εκφώνηση της εργασίας). Συνεπώς, θεωρήθηκε κατάλληλο και χρησιμοποιήθηκε το μοντέλο του \textbf{καταρράκτη (waterfall)} \cite{senarath2021waterfall}. Επιπροσθέτως, το εκπόνημα απαιτούσε μόνο μία τελική παράδοση, χωρίς ενδιάμεσες ανατροφοδοτήσεις ή παραδοτέα, κάτι που προσιδιάζει στη φιλοσοφία του καταρράκτη. Συνεπώς, θεωρήθηκε η πλέον ενδεδειγμένη μεθοδολογία για την ανάπτυξη της εφαρμογής \cite{saeed2019analysis}.
+\end{minipage}
+\end{figure}
+
+Στα επόμενα τμήματα του παρόντος κεφαλαίου παρουσιάζονται αναλυτικά οι φάσεις υλοποίησης της εφαρμογής, ακολουθώντας το μοντέλο του καταρράκτη.
+
+\subsection{Ανάλυση/προδιαγραφές}
+
+\subsubsection{Διερευνητική Μελέτη}
+
+    Ποιος είναι ο πελάτης και γιατί μας κάλεσε;
+
+    Στην δοθείσα εργασία, υποθέτουμε ότι ο πελάτης μας είναι ένας βιολόγος ή γιατρός ο οποίος διαθέτει μοριακά ή βιολογικά δεδομένα. Παρότι ο πελάτης επιδιώκει να εφαρμόσει αλγορίθμους Μηχανικής Μάθησης πάνω στα διαθέσιμα δεδομένα του και να συνάγει ιατρικά συμπεράσματα, εντούτοις ο ίδιος δεν διαθέτει πληροφοριακές γνώσεις. Οπότε η δημιουργία ενός αξιόλογου εργαλείου μηχανικής μάθησης προκειμένου να καλυφθούν οι απαιτήσεις (βλέπε \ref{sec:requirements}) του πελάτη είναι απαραίτητη.
+
+\subsubsection{Μελέτη Σκοπιμότητας}
+
+    Αξίζει τον κόπο να πληρώσει ο πελάτης;
+
+    Η υλοποίηση ενός εργαλείου μηχανικής μάθησης, προσαρμοσμένου στα βιολογικά ή μοριακά δεδομένα του πελάτη, μπορεί να προσφέρει σημαντική προστιθέμενη αξία, καθώς ενδέχεται να αποκαλύψει πρότυπα ή συσχετίσεις που δεν είναι εμφανείς με παραδοσιακές μεθόδους. Αν και η ανάπτυξη ενός τέτοιου συστήματος απαιτεί εξειδικευμένους πόρους και χρόνο, το ενδεχόμενο να παραχθούν χρήσιμα ιατρικά συμπεράσματα και να επιταχυνθούν ερευνητικές διαδικασίες δικαιολογεί την επένδυση. Οι εναλλακτικές λύσεις, όπως η χρήση έτοιμων εργαλείων χωρίς παραμετροποίηση ή η ανάθεση σε τρίτους, είτε είναι περιορισμένες σε δυνατότητες είτε αυξάνουν το κόστος χωρίς αντίστοιχη απόδοση. Επομένως, κρίνεται σκόπιμο να προχωρήσει η επένδυση, καθώς η δυνητική ωφέλεια υπερβαίνει το κόστος, ενώ ακόμη και ένας χρήστης χωρίς εξειδικευμένες γνώσεις πληροφορικής μπορεί να αξιοποιήσει τις τεχνολογίες μηχανικής μάθησης στον τομέα του.
+    
+    
+
+\subsubsection{Ανάλυση Απαιτήσεων}
+\label{sec:requirements}
+
+\paragraph{Απαιτήσεις:}
+\begin{enumerate}
+    \item \textbf{Μη λειτουργικές απαιτήσεις:}
+    \begin{itemize}
+        \item Απαιτήσεις χρήσης:
+        
+            Η εφαρμογή θα πρέπει να ελέγχεται µε τη χρήση του ποντικιού ή του πληκτρολογίου και να συνοδεύεται από αναλυτικό εγχειρίδιο χρήστη και εγχειρίδιο εκµάθησης, δηλαδή η αλληλεπίδραση του χρήστη με την εφαρμογή θα γίνει μέσω μιας διεπαφής(User Interface).
+
+            Δίνεται η δυνατότητα στον πελάτη να ελέγχει και να διαχειρίζεται τους παραμέτρους με διάφορων είδη κουμπιιών.
+            
+            Ο πελάτης κατόπιν ανεβάσματος των δεδομένων θα κατευθυνθεί αμέσως στα αποτελέσματα. Η εφαρμογή θα εκτελεσθεί με τις προεπιλεγμένους παραμέτρους.
+            
+        \item Απαιτήσεις αξιοπιστίας:
+        
+            Σε περίπτωση απρόβλεπτου τερµατισµού της λειτουργίας της εφαρμογής θα πρέπει να επιχειρείται επανεκκίνηση µε την ελάχιστη δυνατή απώλεια δεδοµένων για το χρήστη.
+
+            Τα σφάλματα θα εμφανίζονται στην οθόνη του υπολογιστή.
+            
+        \item Απαιτήσεις επιδόσεων (Οι χρόνοι εκτέλεσης αφορούν τον υπολογιστή του πελάτη):
+
+            Ο χρόνος εκαίδευσης του μοντέλου  {ML}, Θα είναι ανάλογα με το μέγεθος των δεδομένων(δειγμάτων).Για δεδομένα single cell μέγεθος μικρότερο του 65BM σε μορφή AnnData.
+            Ο χρόνος μεταφόρτωσης (upload) δεδομένων δεν θα υπερβαίνει τα 600ms.
+            Ο Χρόνος προεπεξεργασίας (preprocessing) θα είναι κατά μέσο όρο 30s.
+            Ο χρόνος δημιουργίας διαγραμμάτων (plot) και απεικόνισή τους θα είναι 17s κατά μέσο όρο.
+            Ο χρόνος εκτέλεσης DEG και απεικόνιση με υφαιστειακό διάγραμμα (Volcano Plot) κατά μέσο όρο 35s.
+            
+        \item Απαιτήσεις υποστήριξης:
+
+            Η εφαρμογή θα υποστηρίζει δεδομένα σε μορφή AnnData και αρχεία "h5ad".
+            
+        \item Απαιτήσεις υλοποίησης:
+        
+            Η εφαρμογή κατά την υλοποίηση πρέπει να γίνει Dockerized, ώστε να εμπεριέχει τα πλεονεκτήματα που περιγράφηκαν στο κεφάλαιο \ref{sec:dockerization} .
+            
+        \item Φυσικές απαιτήσεις:
+
+            Το λογισμικό θα φαίνεται στον φυλλομετρητή του πελάτη.
+    \end{itemize}
+    
+    \item \textbf{Λειτουργικές απαιτήσεις}
+    \begin{itemize}
+        \item Η εφαρμογή θα εμπεριέχει τμήμα (tab) για ανέβασμα αρχείων μέχρι 200MB.
+        \item Στο τμήμα (tab preprocessinig), τα δεδομένα μπορεί να υφίστανται προεπεξεργασία τύπου κανονικοποίηση.
+        \item Στην εφαρμογή μπορεί να γίνει ενοποίηση δεδομένων(batch Datasets).
+        \item Η εφαρμογή προσφέρει οπτικοποίηση των δεδομένων πρίν και μετά από την επεξεργασία δεδομένων.
+        \item Στην εφαρμογή έχει η δυνατότητα επιλογή χαρακτήριστικών {future selection}.
+        \item Υπάρχει η μέθοδολογία ανάλυσης {Dimensionality Reduction Method}.
+    \end{itemize}
+        
+\end{enumerate}
+
+
+
+
+
+\subsection{Σχεδίαση}
+
+Η σχεδίαση του συστήματος βασίστηκε στην αντικειμενοστραφή μοντελοποίηση μέσω διαγραμμάτων UML, τα οποία περιγράφουν τόσο τη δομή όσο και τη συμπεριφορά του συστήματος. Τα βασικά διαγράμματα που χρησιμοποιήθηκαν είναι το \textit{Διάγραμμα Κλάσεων} και το \textit{Διάγραμμα Περιπτώσεων Χρήσης}, τα οποία αναλύθηκαν στην ενότητα~\textbf{\ref{sec:uml}}.
+
+Αυτά τα διαγράμματα προσφέρουν μια καθαρή εικόνα των αλληλεπιδράσεων μεταξύ των διαφορετικών στοιχείων του συστήματος (όπως τα επιμέρους τμήματα της διεπαφής — tabs), όπως κλάσεις, αρχεία δεδομένων και μοντέλα μηχανικής μάθησης.
+
+
+% ||--------------------Ανάλυση της Υλοποίησης--------------------||
+\subsection{Ανάλυση της Υλοποίησης \& Τεχνικές λεπτομέριες}
+\label{sec:implementation}
+
+Η υλοποίηση της εφαρμογής πραγματοποιήθηκε με τη χρήση της γλώσσας προγραμματισμού \textbf{Python}, με κύριο εργαλείο το \textbf{Streamlit} για τη δημιουργία της διεπαφής χρήστη. Η αρχιτεκτονική του κώδικα ακολουθεί τις αρχές της αρθρωτής ανάπτυξης (\textit{modularity}) και του διαχωρισμού ευθυνών (\textit{separation of concerns}): κάθε βασική λειτουργικότητα (φόρτωση δεδομένων, προεπεξεργασία, οπτικοποίηση, εφαρμογή αλγορίθμων) υλοποιήθηκε ως ξεχωριστό module ή/και κλάση. Αυτό διευκολύνει σημαντικά τη συντήρηση και την επέκταση της εφαρμογής.
+
+Επιπλέον, η χρήση του \textbf{Docker} επέτρεψε την απομόνωση της εφαρμογής από το εκάστοτε περιβάλλον εκτέλεσης και ενίσχυσε την επαναληψιμότητα και φορητότητα της ανάπτυξης. Η ελαχιστοποίηση εξαρτήσεων ενίσχυσε την αξιοπιστία.
+
+Κατά την υλοποίηση ακολουθήθηκε το μοντέλο του καταράκτη (\textit{waterfall model}), με αποτέλεσμα τη σειριακή ανάπτυξη των επιμέρους ενοτήτων. Αρχικά υλοποιήθηκε το \textbf{Upload Data}, το οποίο αρχικά υποστήριζε αυτόματη φόρτωση αρχείων· η συμπεριφορά αυτή τροποποιήθηκε στη τελική φάση ώστε να παρέχεται περισσότερος έλεγχος στον χρήστη. Στη συνέχεια αναπτύχθηκε η ενότητα \textbf{Preprocessing}, ακολούθησε η \textbf{Visualization}, έπειτα το \textbf{Algorithms}, και τέλος η ενότητα \textbf{About Us}.
+
+
+
+
+\subsection{Έλεγχος (Testing)}
+\label{sec:testing}
+Η διαδικασία ελέγχου περιλάμβανε \textbf{manual testing} και έλεγχο ορθής λειτουργίας για κάθε επιμέρους λειτουργικότητα της εφαρμογής. Πραγματοποιήθηκαν δοκιμές με διαφορετικές παραμέτρους για την επιβεβαίωση της σταθερότητας της εφαρμογής. Έγινε έλεγχος εγκυρότητας των αποτελεσμάτων στα γραφήματα, στους αλγορίθμους ανάλυσης και στις περιπτώσεις μη αποδεκτών εισόδων.
+Παρόλο που δεν υλοποιήθηκε εκτενές \textbf{unit testing}, η modular δομή του κώδικα διευκολύνει την προσθήκη τέτοιων τεστ στο μέλλον.
+
+
+% ||--------------------Οπτικοποίηση των Αποτελεσμάτων--------------------||
+\subsection{Οπτικοποίηση εφαρμογής και παραγόμενα Αποτελέσματα}
+\label{sec:visualization}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{screens/upload1.png}
+    \caption{Upload data tab, πριν το ανέβασμα του αρχείου}
+    \label{fig:upload1}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{screens/upload2.png}
+    \caption{Upload data tab, μετά το ανέβασμα του αρχείου}
+    \label{fig:upload2}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{screens/upload3.png}
+    \caption{Upload data tab, πληροφορίες για τα δεδομένα του αρχείου}
+    \label{fig:upload3}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{screens/prepr1.png}
+    \caption{Preprocessing tab, επιλογή παραμέτρων για preprocessing}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{screens/prepr2.png}
+    \caption{Preprocessing tab, loading εφέ στο preprocessing}
+    \label{fig:prepr2}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{screens/visual1.png}
+        \caption{Visualization tab, before and after genes per cell}
+    \label{fig:visual1}
+\end{figure}
+\
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{screens/visual2.png}
+    \caption{Visualization tab, before and after counts per cell}
+    \label{fig:visual2}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{screens/visual3.png}
+    \caption{Visualization tab, before and after UMAP}
+    \label{fig:visual3}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{screens/algos1.png}
+    \caption{Algorithms tab, 3D UMAP διάγραμμα}
+    \label{fig:algos1}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{screens/algos2.png}
+    \caption{Algorithms tab, 3D TSNE διάγραμμα}
+    \label{fig:algos2}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{screens/algos3.png}
+    \caption{Algorithms tab, Volcano plot}
+    \label{fig:algos3}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{screens/aboutus1.png}
+    \caption{About us tab, πληροφορίες ομάδας}
+    \label{fig:aboutus1}
+\end{figure}
+
+\noindent\rule{\linewidth}{0.4pt}
+% ||--------------------Διαδικασία-Dockerization--------------------||
+
+\section{Διαδικασία  {Dockerization}}
+\label{sec:dockerization}
+
+\subsection{Εισαγωγή}
+Τα τελευταία χρόνια, το  {Docker} έχει μεταμορφώσει τον τρόπο με τον οποίο αναπτύσσονται, διαχειρίζονται και διανέμονται οι εφαρμογές. Μια από τις βασικές του συνεισφορές είναι η εξάλειψη των λεγόμενων  {"It works on my machine"} προβλημάτων, τα οποία προκαλούνται κυρίως από διαφορές στα περιβάλλοντα ανάπτυξης και παραγωγής\cite{singh2021machine}.
+
+Μέσω της τεχνολογίας των  containers, το  Docker επιτρέπει τη συσκευασία μιας εφαρμογής μαζί με όλες τις εξαρτήσεις της, δημιουργώντας ένα φορητό και αναπαραγώγιμο περιβάλλον εκτέλεσης\cite{singh2021machine}. Έτσι, η «φάλαινα» της ιστορίας μας αναδύεται από τα βάθη του ωκεανού για να πακετάρει, μεταφέρει και εκτελεί τις εφαρμογές με ακρίβεια και συνέπεια, ανεξάρτητα από το λειτουργικό σύστημα ή την πλατφόρμα.
+
+Στο σχήμα \ref{fig:docker} παρουσιάζεται η διαδικασία  {Dockerization}, ενώ στις υποενότητες αναλύεται κάθε βήμα για τη δημιουργία του  {container} της εφαρμογής μας.
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{docker-image.jpg}
+    \caption{ {Docker usage and container lifecycle}}
+    \label{fig:docker}
+\end{figure}
+
+
+Η διαδικασία  {dockerization} ξεκινά με τη δημιουργία ενός  {Dockerfile}, όπου περιγράφονται οι οδηγίες για το περιβάλλον και την εγκατάσταση της εφαρμογής. Από αυτό το αρχείο δημιουργείται ένα  {Image}, το οποίο εκτελείται ως  {Container} για την απομονωμένη και φορητή λειτουργία της εφαρμογής\cite{raj2015learning}\cite{chelladhurai2017learning}.
+
+\noindent
+
+\begin{figure}[ht!]
+\centering
+\begin{minipage}[t]{0.32\textwidth}
+    \vspace{0pt}
+    \subsection{Δημιουργία Dockerfile}
+
+    Στα δεξιά παραθέτουμε την εικόνα, \texttt{Dockerfile} της εφαρμογής μας, με αναλυτικές περιγραφές και σχόλια για κάθε εντολή της δημιουργίας της εικόνας (IMAGE):
+
+    Κάθε εντολή είναι υπεύθυνη για την κατασκευή ενός στρώματος στο τελικό \texttt{image}. Η χρήση του \texttt{--no-cache-dir} στη \texttt{pip install} εντολή μειώνει το μέγεθος του τελικού \texttt{image}.
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.64\textwidth}
+    \vspace{0pt}
+    \centering
+    \includegraphics[width=\linewidth]{Dockerfile.png}
+    \caption{Περιεχόμενο αρχείου Dockerfile.}
+    \label{fig:Dockerfile}
+\end{minipage}
+\end{figure}
+
+
+
+\subsection{Δημιουργία  {Image}}
+Αφού δημιουργηθεί το  {Dockerfile}, μπορούμε να κατασκευάσουμε το  {image} της εφαρμογής με τις εξής εντολές:
+
+Ώντας στο φάκελο( {repository}) της εφαρμογής εκτελούμε:
+
+\begin{lstlisting}[language=bash]
+    docker build -t my-image-name:1.0 .
+\end{lstlisting}
+
+
+Προσοχή, η τελεία(.) στο τέλος της εντολής δηλώνει τον τρέχων φάκελο και είναι απαραίτητη.
+
+Κατόπιν δημιουργίας του  {Image}, μπορούμε να ελέξουμε τη σωστή λειτουργία της προηγούμενης εντολής με:
+
+\begin{lstlisting}[language=bash]
+    docker images
+\end{lstlisting}
+
+Η επιτυχής εκτέλεση θα εμφανίσει το  {Image} με το όνομα ` {my-image-name}` και ετικέτα `1.0`.
+
+
+\subsection{Δημιουργία  {Container} / Εκτέλεση Εικόνας}
+Το τελικό βήμα είναι η εκκίνηση της εφαρμογής. Η εκτέλεση του  {Image} ονομάζεται Container. Με λίγα λόγια,  {Container} είναι ένα ενεργοποιημένο  {Image}. ;Παρακάτω βλέπετε την εντολή για την εκκίνηση της εφαρμογής:
+
+\begin{lstlisting}[language=bash]
+    docker run --rm -p 8501:8501 molecular-analysis:1.0
+\end{lstlisting}
+
+
+H  {`--rm`} διασφαλίζει ότι το  {Container} θα διαγραφεί αυτόματα μετά το κλείσιμο, ώστε να μην μένουν περιττά  {Container} στο σύστημα. Η  {`-p 8501:8501`} ορίζει τη θύρα 8501 του container στη θύρα 8501 του  {host}, καθιστώντας την εφαρμογή προσβάσιμη από τον  {browser} στη διεύθυνση  {`http://localhost:8501`}.
+
+
+
+
+
+
+
+\noindent\rule{\linewidth}{0.4pt}
+% ||--------------------Διαγράμματα UML--------------------||
+\section{Διαγράμματα UML}
+\label{sec:uml}
+
+Τα \textbf{Διαγράμματα Ενοποιημένης Μοντελοποίησης (UML)} αναπαριστούν συστήματα σε διαφορετικά επίπεδα λεπτομέρειας. Ορισμένα διαγράμματα περιγράφουν ένα σύστημα αφαιρετικά, ενώ άλλα παρέχουν μια λεπτομερέστερη εικόνα. Περιλαμβάνουν στοιχεία όπως actors, use cases, classes και packages. Τα πιο συνήθη είναι τα \textbf{Διαγράμματα Κλάσεων} και τα \textbf{Διαγράμματα Περιπτώσεων Χρήσης}.
+
+\subsection{Διάγραμμα Κλάσεων}
+
+Το \textbf{Διάγραμμα Κλάσεων (Class Diagram)} είναι ένα στατικό διάγραμμα που περιγράφει τη \textbf{δομή ενός συστήματος}, απεικονίζοντας τις classes του συστήματος, τα attributes, τις μεθόδους τους και τις μεταξύ τους σχέσεις. Αποτελεί τον \textbf{κύριο δομικό λίθο} της αντικειμενοστραφούς μοντελοποίησης.
+
+\noindent Παρακάτω παρουσιάζεται το Διάγραμμα Κλάσεων της εφαρμογής:
+
+Το διάγραμμα περιλαμβάνει πέντε βασικές κλάσεις: StreamlitApp, FileUploader, Preprocessor, Visualization και Algorithms.
+
+\vspace{1em}
+
+\begin{figure}[ht!]
+    \centering
+    \includegraphics[width=0.5\textwidth]{class_diagram.png}
+    \caption{Διάγραμμα Κλάσεων UML.}
+\end{figure}
+
+\vspace{1em}
+
+\paragraph{StreamlitApp:}
+Η κύρια κλάση της εφαρμογής, βασισμένη στο Streamlit. Είναι υπεύθυνη για την εκκίνηση της διεπαφής χρήστη και την παροχή πρόσβασης στις υπόλοιπες λειτουργίες (ανάλυση, φόρτωση, προβολή).
+\begin{itemize}
+  \item \textbf{Χαρακτηριστικά:}
+  \begin{itemize}
+    \item \texttt{Molecular Data Analysis}
+  \end{itemize}
+\end{itemize}
+
+\paragraph{FileUploader:}
+Αντιπροσωπεύει τον μηχανισμό εισαγωγής αρχείων τύπου \texttt{.h5ad} από τον χρήστη.
+\begin{itemize}
+  \item \textbf{Χαρακτηριστικά:}
+  \begin{itemize}
+    \item \texttt{type}: h5ad
+    \item \texttt{max\_size}: 200MB
+  \end{itemize}
+  \item \textbf{Μέθοδος:}
+  \begin{itemize}
+    \item \texttt{upload\_data()}: Φορτώνει το αρχείο δεδομένων στην εφαρμογή.
+  \end{itemize}
+\end{itemize}
+
+\paragraph{Preprocessor:}
+Εκτελεί προεπεξεργασία στα δεδομένα, βασισμένη σε επιλεγμένες παραμέτρους.
+\begin{itemize}
+  \item \textbf{Χαρακτηριστικά:}
+  \begin{itemize}
+    \item \texttt{αριθμός και είδη γονιδίων}
+    \item \texttt{batch key}
+    \item \texttt{στατιστικά checkboxes}
+  \end{itemize}
+  \item \textbf{Μέθοδος:}
+  \begin{itemize}
+    \item \texttt{run\_preprocessing()}: Εφαρμόζει τα βήματα καθαρισμού και κανονικοποίησης στα δεδομένα.
+  \end{itemize}
+\end{itemize}
+
+\paragraph{Visualization:}
+Διαχειρίζεται τη δημιουργία γραφημάτων και απεικονίσεων βασισμένων στα προεπεξεργασμένα δεδομένα.
+\begin{itemize}
+  \item \textbf{Χαρακτηριστικά:}
+  \begin{itemize}
+    \item \texttt{plots}:
+    \begin{itemize}
+      \item γονίδια ανά κύτταρο
+      \item συνολικός αριθμός μετρήσεων ανά κύτταρο
+      \item ποσοστό μιτοχονδριακών γονιδίων
+      \item συσχέτιση γονιδίων με συνολικές μετρήσεις
+      \item UMAP
+    \end{itemize}
+  \end{itemize}
+  \item \textbf{Μέθοδος:}
+  \begin{itemize}
+    \item \texttt{run\_visuals()}: Παράγει τις οπτικοποιήσεις για τον χρήστη.
+  \end{itemize}
+\end{itemize}
+
+\paragraph{Algorithms:}
+Υλοποιεί αλγορίθμους ανάλυσης υψηλότερου επιπέδου πάνω στα επεξεργασμένα δεδομένα.
+\begin{itemize}
+  \item \textbf{Χαρακτηριστικά:}
+  \begin{itemize}
+    \item \texttt{methods}:
+    \begin{itemize}
+      \item TSNE
+      \item UMAP
+      \item Batch Correction
+      \item DEG Analysis
+    \end{itemize}
+  \end{itemize}
+  \item \textbf{Μέθοδος:}
+  \begin{itemize}
+    \item \texttt{deploy\_algorithms()}: Εφαρμόζει τους παραπάνω αλγορίθμους και επιστρέφει τα αποτελέσματα.
+  \end{itemize}
+\end{itemize}
+
+\subsection{Διάγραμμα Περιπτώσεων Χρήσης}
+
+Το \textbf{Διάγραμμα Περιπτώσεων Χρήσης (Use Case Diagram)} είναι τύπος διαγράμματος συμπεριφοράς που περιγράφει τις \textbf{λειτουργικές απαιτήσεις} ενός συστήματος. Εστιάζει στο \textbf{τι} κάνει το σύστημα, όχι στο \textbf{πώς} το κάνει.
+
+\noindent Ακολουθεί το Διάγραμμα Περιπτώσεων Χρήσης της εφαρμογής:
+
+\vspace{1em}
+
+\noindent
+\begin{minipage}[t]{0.5\textwidth}
+\vspace{0pt}
+\includegraphics[width=\linewidth]{use_case.png}
+\captionof{figure}{Διάγραμμα Περιπτώσεων Χρήσης UML.}
+\end{minipage}%
+\hfill
+\begin{minipage}[t]{0.5\textwidth}
+\vspace{0pt}
+
+Οι κύριες περιπτώσεις χρήσης που υποστηρίζει η εφαρμογή είναι οι εξής:
+
+\begin{itemize}
+    \item \textbf{Upload data}: Ανέβασμα αρχείων δεδομένων \texttt{.h5ad}. Πρόκειται για έναν τυποποιημένο τύπο αρχείου για την αποθήκευση μονοκυτταρικών δεδομένων. Έπειτα από το ανέβασμα του αρχείου παρουσιάζεται ένα overview των δεδομένων που περιέχει το αρχείο.
+    \item \textbf{Preprocessing}: Εκτελεί βήματα καθαρισμού και κανονικοποίησης των δεδομένων, σύμφωνα με τις επιλογές του χρήστη (π.χ. φιλτράρισμα γονιδίων ή κυττάρων).
+    \item \textbf{Visualization}: Παρέχει γραφήματα και απεικονίσεις (UMAP, ποσοστά μιτοχονδριακών γονιδίων, μετρήσεις ανά κύτταρο) που βοηθούν στην κατανόηση της ποιότητας και δομής των δεδομένων.
+    \item \textbf{Algorithms}: Περιλαμβάνει πιο σύνθετες αναλύσεις όπως μείωση διαστατικότητας (TSNE/UMAP), batch correction και διαφορική έκφραση (DEG Analysis).
+    \item \textbf{About us}: Παρέχει πληροφορίες για την ομάδα και την εφαρμογή. Η πλοήγηση σε αυτή την καρτέλα γίνεται από οποιαδήποτε άλλη, αφού έχει πληροφοριακό χαρακτήρα.
+\end{itemize}
+\end{minipage}
+
+\noindent\rule{\linewidth}{0.4pt}
+
+\section{Σύνδεσμος πηγαίου κώδικα στο Github και LaTex report}
+
+\textbf{Παρακάτω βρίσκεται ο σύνδεσμος για την προβολή και λήψη του πηγαίου κώδικα της εφαρμογής:}
+\newline
+\url{https://github.com/giannisgks/molecular_analysis}\\
+
+\noindent\textbf{Παρακάτω βρίσκεται ο σύνδεσμος για την προβολή και λήψη του αρχείου latex μέσω του οποίου δημιουργήθηκε η παρούσα αναφορά:}
+\newline
+\url{https://www.overleaf.com/read/zbzwvfbyzvvy#508352}
+
+\noindent\rule{\linewidth}{0.4pt}
+% ||--------------------βιβλιογραφία--------------------||
+\section{Βιβλιογραφία}
+\printbibliography
+
+
+\end{document}
