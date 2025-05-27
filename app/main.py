@@ -517,7 +517,7 @@ with tabs[3]:
         use_3d = st.checkbox("Use 3D projection")
 
         # Button to trigger dimensionality reduction and plotting
-        if st.button("Run Dimensionality Reduction and Plot"):
+        if st.button("Run Dimensionality Reduction and Plot", key='rotate3d'):
 
             # Run PCA if needed
             if "X_pca" not in adata.obsm:
@@ -593,7 +593,7 @@ with tabs[3]:
             unsafe_allow_html=True
         )
 
-        if st.button("Apply Batch Correction"):
+        if st.button("Apply Batch Correction", key='io-button'):
             if "batch" not in adata.obs.columns:
                 st.error("No 'batch' column found in metadata for batch correction.")
             else:
@@ -633,7 +633,7 @@ with tabs[3]:
 
         st.markdown("<span style='color: grey;'>Select a group to compare against the reference group using statistical tests.</span>", unsafe_allow_html=True)
 
-        if st.button("Run DEG Analysis"):
+        if st.button("Run DEG Analysis", key='glow-on-hover'):
             with st.spinner("Running differential expression..."):
                 sc.tl.rank_genes_groups(adata, groupby=groupby, groups=[comp_group], reference=ref_group, method="wilcoxon")
                 result = adata.uns['rank_genes_groups']

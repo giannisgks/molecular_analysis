@@ -89,3 +89,99 @@
   100% {transform: translate(0);}
 }
 
+/* Rotate 3d */
+.st-key-rotate3d button {
+  perspective: 300px;
+  transform-style: preserve-3d;
+  margin: auto;
+}
+
+.st-key-rotate3d:hover {
+  animation: rotate3d 0.7s;
+}
+
+@keyframes rotate3d {
+  0% {
+    transform: rotateX(0deg);
+  }
+  50% {
+    transform: rotateX(180deg);
+  }
+  100% {
+    transform: rotateX(360deg);
+  }
+}
+
+
+/* Glow on hover */
+.st-key-glow-on-hover {
+  border: none;
+  outline: none;
+  cursor: pointer;
+  position: relative;
+  z-index: 0;
+  border-radius: 10px;
+  margin: auto;
+}
+
+.st-key-glow-on-hover:before {
+  content: '';
+  background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000);
+  position: absolute;
+  top: -2px;
+  left:-2px;
+  background-size: 400%;
+  z-index: -1;
+  filter: blur(5px);
+  width: calc(100% + 4px);
+  height: calc(100% + 4px);
+  animation: glowing 20s linear infinite;
+  opacity: 0;
+  transition: opacity .3s ease-in-out;
+  border-radius: 10px;
+}
+
+.st-key-glow-on-hover:active {
+  color: #000
+}
+
+.st-key-glow-on-hover:active:after {
+  background: transparent;
+}
+
+.st-key-glow-on-hover:hover:before {
+  opacity: 1;
+}
+
+.st-key-glow-on-hover:after {
+  z-index: -1;
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: #111;
+  left: 0;
+  top: 0;
+  border-radius: 10px;
+}
+
+@keyframes glowing {
+  0% { background-position: 0 0; }
+  50% { background-position: 400% 0; }
+  100% { background-position: 0 0; }
+}
+
+
+
+
+.st-key-io-button {
+  box-shadow: #094c66 4px 4px 0 0;
+  transition: transform 200ms, box-shadow 200ms;
+  border-radius: 14px;
+  margin: auto;
+}
+
+.st-key-io-button:active {
+  transform: translateY(4px) translateX(4px);
+  box-shadow: #094c66 0px 0px 0px 0px;
+}
