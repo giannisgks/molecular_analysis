@@ -144,7 +144,7 @@ with tabs[0]:
 with tabs[1]:
     st.header("Preprocessing of the data")
 
-    if "adata" in st.session_state and ftype == 'h5ad':
+    if "adata" in st.session_state:
         adata = st.session_state.adata  # Load AnnData from session
 
         st.markdown('<p style="color: grey;">Set preprocessing parameters below.</p>', unsafe_allow_html=True)

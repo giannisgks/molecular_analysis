@@ -7,6 +7,13 @@ WORKDIR /app
 # Αντιγραφή του αρχείου requirements.txt στο container
 COPY requirements.txt .
 
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    gcc \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
 # Εγκατάσταση των εξαρτήσεων της εφαρμογής
 RUN pip install --no-cache-dir -r requirements.txt
 
